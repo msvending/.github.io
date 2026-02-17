@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Planogram Builder</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <header class="topbar">
@@ -27,11 +27,11 @@
         <input id="layoutInput" type="text" value="3,3,3,3,3,3" />
       </label>
 
-      <button id="applyBtn">Apply</button>
-      <button id="saveBtn">Save</button>
-      <button id="loadBtn">Load</button>
-      <button id="exportBtn">Export JSON</button>
-      <button id="clearBtn" class="danger">Clear</button>
+      <button id="applyBtn" type="button">Apply</button>
+      <button id="saveBtn" type="button">Save</button>
+      <button id="loadBtn" type="button">Load</button>
+      <button id="exportBtn" type="button">Export JSON</button>
+      <button id="clearBtn" type="button" class="danger">Clear</button>
     </div>
   </header>
 
@@ -47,20 +47,15 @@
 
         <div class="row">
           <input id="urlInput" type="url" placeholder="https://...image.png" />
-          <button id="addUrlBtn">Add</button>
+          <button id="addUrlBtn" type="button">Add</button>
         </div>
 
         <div id="library" class="library"></div>
       </div>
 
       <div class="panel">
-        <h3>Tips</h3>
-        <ul class="muted">
-          <li>Row layout example: <code>3,5,2,4</code> (4 rows)</li>
-          <li>Drag items from Library into a section.</li>
-          <li>Drag items around to reposition.</li>
-          <li>Double-click an item to remove it.</li>
-        </ul>
+        <h3>Status</h3>
+        <div id="status" class="muted">Loading…</div>
       </div>
     </aside>
 
@@ -86,11 +81,11 @@
       <textarea id="exportText" spellcheck="false"></textarea>
       <div class="dialogActions">
         <button id="copyBtn" type="button">Copy</button>
-        <button>Close</button>
+        <button type="submit">Close</button>
       </div>
     </form>
   </dialog>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
