@@ -3,8 +3,7 @@ const libraryEl = document.getElementById("library");
 
 const wInput = document.getElementById("wInput");
 const hInput = document.getElementById("hInput");
-const rInput = document.getElementById("rInput");
-const cInput = document.getElementById("cInput");
+const layoutInput = document.getElementById("layoutInput");
 
 const dimLabel = document.getElementById("dimLabel");
 const gridLabel = document.getElementById("gridLabel");
@@ -23,77 +22,121 @@ const exportDialog = document.getElementById("exportDialog");
 const exportText = document.getElementById("exportText");
 const copyBtn = document.getElementById("copyBtn");
 
-const STORAGE_KEY = "planogram_builder_v1";
+const STORAGE_KEY = "planogram_builder_v2";
 
 let state = {
-  canvas: { width: 1240, height: 2438, rows: 6, cols: 3 },
+  canvas: { width: 1240, height: 2438, rowLayout: [3,3,3,3,3,3] },
   library: [], // {id, src, name}
-  items: []    // {id, src, x, y, w, h, section: {r,c}}
+  items: []    // {id, src, x, y, w, h, section:{r,c}}
 };
 
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
 
-// ---------- Canvas + sections ----------
+// ---------------- Layout helpers ----------------
+function parseRowLayout(text) {
+  // accepts "3,3,4,2" or "3 3 4 2"
+  const parts = (text || "")
+    .split(/[, ]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const nums = parts.map(p => clampInt(p, 1, 200));
+  return nums.length ? nums : [3,3,3,3,3,3];
+}
+
+function buildSections() {
+  // returns array of section rects for current layout
+  const { width, height, rowLayout } = state.canvas;
+  const rows = rowLayout.length;
+  const rowH = height / rows;
+
+  const sections = [];
+  for (let r = 0; r < rows; r++) {
+    const cols = rowLayout[r];
+    const colW = width / cols;
+    for (let c = 0; c < cols; c++) {
+      sections.push({
+        r, c,
+        x: c * colW,
+        y: r * rowH,
+        w: colW,
+        h: rowH
+      });
+    }
+  }
+  return sections;
+}
+
+function getSectionForPoint(x, y) {
+  const { width, height, rowLayout } = state.canvas;
+
+  const cx = clamp(x, 0, width - 1);
+  const cy = clamp(y, 0, height - 1);
+
+  const rows = rowLayout.length;
+  const rowH = height / rows;
+
+  const r = clamp(Math.floor(cy / rowH), 0, rows - 1);
+
+  const cols = rowLayout[r];
+  const colW = width / cols;
+
+  const c = clamp(Math.floor(cx / colW), 0, cols - 1);
+  return { r, c };
+}
+
+// ---------------- Canvas + sections ----------------
 function applyCanvasSettings() {
   const width = clampInt(wInput.value, 200, 20000);
   const height = clampInt(hInput.value, 200, 20000);
-  const rows = clampInt(rInput.value, 1, 200);
-  const cols = clampInt(cInput.value, 1, 200);
+  const rowLayout = parseRowLayout(layoutInput.value);
 
-  state.canvas = { width, height, rows, cols };
+  state.canvas = { width, height, rowLayout };
 
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
 
   dimLabel.textContent = `${width} × ${height}`;
-  gridLabel.textContent = `${rows} × ${cols}`;
+  gridLabel.textContent = rowLayout.join(",");
 
   renderSections();
-  // keep items inside after resize
+
+  // Keep items inside after resize, and refresh section assignment
   state.items.forEach(it => {
     it.x = clamp(it.x, 0, width - it.w);
     it.y = clamp(it.y, 0, height - it.h);
+
+    const centerX = it.x + it.w / 2;
+    const centerY = it.y + it.h / 2;
+    it.section = getSectionForPoint(centerX, centerY);
   });
+
   renderItems();
 }
 
 function renderSections() {
-  // remove old sections (not items)
+  // remove old sections
   [...canvas.querySelectorAll(".section")].forEach(el => el.remove());
 
-  const { width, height, rows, cols } = state.canvas;
-  const cellW = width / cols;
-  const cellH = height / rows;
+  const sections = buildSections();
+  for (const s of sections) {
+    const sec = document.createElement("div");
+    sec.className = "section";
+    sec.style.left = `${s.x}px`;
+    sec.style.top = `${s.y}px`;
+    sec.style.width = `${s.w}px`;
+    sec.style.height = `${s.h}px`;
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const sec = document.createElement("div");
-      sec.className = "section";
-      sec.style.left = `${c * cellW}px`;
-      sec.style.top = `${r * cellH}px`;
-      sec.style.width = `${cellW}px`;
-      sec.style.height = `${cellH}px`;
+    const label = document.createElement("div");
+    label.className = "sectionLabel";
+    label.textContent = `R${s.r + 1} S${s.c + 1}`;
+    sec.appendChild(label);
 
-      const label = document.createElement("div");
-      label.className = "sectionLabel";
-      label.textContent = `R${r + 1} C${c + 1}`;
-      sec.appendChild(label);
-
-      canvas.appendChild(sec);
-    }
+    canvas.appendChild(sec);
   }
 }
 
-function getSectionForPoint(x, y) {
-  const { width, height, rows, cols } = state.canvas;
-  const cx = clamp(x, 0, width - 1);
-  const cy = clamp(y, 0, height - 1);
-  const c = Math.floor((cx / width) * cols);
-  const r = Math.floor((cy / height) * rows);
-  return { r, c };
-}
-
-// ---------- Library ----------
+// ---------------- Library ----------------
 function addLibraryItem(src, name = "Item") {
   const item = { id: uid(), src, name };
   state.library.unshift(item);
@@ -148,7 +191,7 @@ addUrlBtn.addEventListener("click", () => {
   urlInput.value = "";
 });
 
-// ---------- Drag drop into canvas ----------
+// ---------------- Drag drop into canvas ----------------
 canvas.addEventListener("dragover", (e) => e.preventDefault());
 
 canvas.addEventListener("drop", (e) => {
@@ -165,6 +208,7 @@ canvas.addEventListener("drop", (e) => {
     if (!lib) return;
 
     const section = getSectionForPoint(x, y);
+
     const newItem = {
       id: uid(),
       src: lib.src,
@@ -174,14 +218,14 @@ canvas.addEventListener("drop", (e) => {
       h: 110,
       section
     };
+
     state.items.push(newItem);
     renderItems();
   }
 });
 
-// ---------- Items on canvas ----------
+// ---------------- Items on canvas ----------------
 function renderItems() {
-  // remove existing item elements
   [...canvas.querySelectorAll(".item")].forEach(el => el.remove());
 
   for (const it of state.items) {
@@ -192,20 +236,18 @@ function renderItems() {
     el.style.width = `${it.w}px`;
     el.style.height = `${it.h}px`;
     el.dataset.id = it.id;
-    el.title = `R${it.section.r + 1} C${it.section.c + 1}`;
+    el.title = `R${it.section.r + 1} S${it.section.c + 1}`;
 
     const img = document.createElement("img");
     img.src = it.src;
     img.draggable = false;
     el.appendChild(img);
 
-    // Double click remove
     el.addEventListener("dblclick", () => {
       state.items = state.items.filter(x => x.id !== it.id);
       renderItems();
     });
 
-    // Pointer drag
     enablePointerDrag(el);
 
     canvas.appendChild(el);
@@ -215,7 +257,7 @@ function renderItems() {
 function enablePointerDrag(el) {
   let startX = 0, startY = 0;
   let baseX = 0, baseY = 0;
-  let draggingId = el.dataset.id;
+  const draggingId = el.dataset.id;
 
   el.addEventListener("pointerdown", (e) => {
     el.setPointerCapture(e.pointerId);
@@ -239,24 +281,21 @@ function enablePointerDrag(el) {
     it.x = clamp(baseX + dx, 0, state.canvas.width - it.w);
     it.y = clamp(baseY + dy, 0, state.canvas.height - it.h);
 
-    // update section based on item center
     const centerX = it.x + it.w / 2;
     const centerY = it.y + it.h / 2;
     it.section = getSectionForPoint(centerX, centerY);
 
     el.style.left = `${it.x}px`;
     el.style.top = `${it.y}px`;
-    el.title = `R${it.section.r + 1} C${it.section.c + 1}`;
+    el.title = `R${it.section.r + 1} S${it.section.c + 1}`;
   });
 
   el.addEventListener("pointerup", (e) => {
-    if (el.hasPointerCapture(e.pointerId)) {
-      el.releasePointerCapture(e.pointerId);
-    }
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
   });
 }
 
-// ---------- Save/Load/Export ----------
+// ---------------- Save/Load/Export ----------------
 function saveToLocal() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -264,14 +303,15 @@ function saveToLocal() {
 function loadFromLocal() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return false;
+
   const parsed = safeParseJSON(raw);
-  if (!parsed) return false;
+  if (!parsed?.canvas?.rowLayout) return false;
+
   state = parsed;
 
   wInput.value = state.canvas.width;
   hInput.value = state.canvas.height;
-  rInput.value = state.canvas.rows;
-  cInput.value = state.canvas.cols;
+  layoutInput.value = state.canvas.rowLayout.join(",");
 
   applyCanvasSettings();
   renderLibrary();
@@ -292,10 +332,12 @@ function exportJSON() {
       section: i.section
     }))
   };
+
   exportText.value = JSON.stringify(payload, null, 2);
   exportDialog.showModal();
 }
 
+// Buttons
 applyBtn.addEventListener("click", () => applyCanvasSettings());
 saveBtn.addEventListener("click", () => saveToLocal());
 loadBtn.addEventListener("click", () => {
@@ -315,7 +357,7 @@ copyBtn.addEventListener("click", async () => {
   setTimeout(() => (copyBtn.textContent = "Copy"), 900);
 });
 
-// ---------- Helpers ----------
+// ---------------- Helpers ----------------
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 function clampInt(v, min, max) {
   const n = parseInt(v, 10);
@@ -324,7 +366,9 @@ function clampInt(v, min, max) {
 }
 function truncate(s, n){ return s.length > n ? s.slice(0, n-1) + "…" : s; }
 function escapeHtml(s){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  return (s || "").replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
 }
 function safeParseJSON(s){
   try { return JSON.parse(s); } catch { return null; }
@@ -338,13 +382,17 @@ function fileToDataUrl(file){
   });
 }
 
-// ---------- Init ----------
+// ---------------- Init ----------------
 (function init(){
-  // seed a couple demo items (optional)
+  // Optional demo items (remove if you want empty)
   if (state.library.length === 0) {
     addLibraryItem("https://via.placeholder.com/400x400.png?text=Item+A", "Item A");
     addLibraryItem("https://via.placeholder.com/400x400.png?text=Item+B", "Item B");
   }
+
+  wInput.value = state.canvas.width;
+  hInput.value = state.canvas.height;
+  layoutInput.value = state.canvas.rowLayout.join(",");
 
   applyCanvasSettings();
   renderLibrary();
