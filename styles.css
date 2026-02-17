@@ -55,6 +55,7 @@ body{
   color:var(--muted);
   font-size:12px;
 }
+
 .controls input{
   width:86px;
   padding:8px 10px;
@@ -64,6 +65,11 @@ body{
   color:var(--text);
   outline:none;
 }
+
+.layoutLabel input{
+  width:220px;
+}
+
 button{
   padding:9px 12px;
   border-radius:12px;
