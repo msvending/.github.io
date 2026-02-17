@@ -12,7 +12,7 @@
       <div class="dot"></div>
       <div>
         <div class="title">Planogram Builder</div>
-        <div class="subtitle">Drag & drop items into sections</div>
+        <div class="subtitle">Variable sections per row</div>
       </div>
     </div>
 
@@ -23,11 +23,8 @@
       <label>Height
         <input id="hInput" type="number" min="200" step="10" value="2438">
       </label>
-      <label>Rows
-        <input id="rInput" type="number" min="1" step="1" value="6">
-      </label>
-      <label>Cols
-        <input id="cInput" type="number" min="1" step="1" value="3">
+      <label class="layoutLabel">Row layout
+        <input id="layoutInput" type="text" value="3,3,3,3,3,3" />
       </label>
 
       <button id="applyBtn">Apply</button>
@@ -59,8 +56,9 @@
       <div class="panel">
         <h3>Tips</h3>
         <ul class="muted">
-          <li>Drag items from library into any section.</li>
-          <li>Drag items around inside the plan to reposition.</li>
+          <li>Row layout example: <code>3,5,2,4</code> (4 rows)</li>
+          <li>Drag items from Library into a section.</li>
+          <li>Drag items around to reposition.</li>
           <li>Double-click an item to remove it.</li>
         </ul>
       </div>
@@ -72,7 +70,7 @@
           Planning Space: <span id="dimLabel">1240 × 2438</span>
         </div>
         <div class="muted">
-          Grid: <span id="gridLabel">6 × 3</span>
+          Layout: <span id="gridLabel">3,3,3,3,3,3</span>
         </div>
       </div>
 
