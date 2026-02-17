@@ -2,26 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>My Site</title>
-  <style>
-    body { font-family: system-ui, Arial; margin: 40px; line-height: 1.5; }
-    .card { max-width: 720px; padding: 24px; border: 1px solid #ddd; border-radius: 16px; }
-    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planogram Builder</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="card">
-    <h1>Hello 👋</h1>
-    <p>This site is hosted on GitHub Pages.</p>
-    <button id="btn">Click me</button>
-    <p id="out"></p>
-  </div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">Planogram Builder</div>
+        <div class="subtitle">Drag & drop items into sections</div>
+      </div>
+    </div>
 
-  <script>
-    document.getElementById("btn").addEventListener("click", () => {
-      document.getElementById("out").textContent = "It works!";
-    });
-  </script>
+    <div class="controls">
+      <label>Width
+        <input id="wInput" type="number" min="200" step="10" value="1240">
+      </label>
+      <label>Height
+        <input id="hInput" type="number" min="200" step="10" value="2438">
+      </label>
+      <label>Rows
+        <input id="rInput" type="number" min="1" step="1" value="6">
+      </label>
+      <label>Cols
+        <input id="cInput" type="number" min="1" step="1" value="3">
+      </label>
+
+      <button id="applyBtn">Apply</button>
+      <button id="saveBtn">Save</button>
+      <button id="loadBtn">Load</button>
+      <button id="exportBtn">Export JSON</button>
+      <button id="clearBtn" class="danger">Clear</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="panel">
+        <h3>Library</h3>
+        <p class="muted">Upload images or add a URL, then drag into the plan.</p>
+
+        <div class="row">
+          <input id="fileInput" type="file" accept="image/*" multiple />
+        </div>
+
+        <div class="row">
+          <input id="urlInput" type="url" placeholder="https://...image.png" />
+          <button id="addUrlBtn">Add</button>
+        </div>
+
+        <div id="library" class="library"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Tips</h3>
+        <ul class="muted">
+          <li>Drag items from library into any section.</li>
+          <li>Drag items around inside the plan to reposition.</li>
+          <li>Double-click an item to remove it.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div class="workspaceHeader">
+        <div class="muted">
+          Planning Space: <span id="dimLabel">1240 × 2438</span>
+        </div>
+        <div class="muted">
+          Grid: <span id="gridLabel">6 × 3</span>
+        </div>
+      </div>
+
+      <div class="canvasWrap">
+        <div id="canvas" class="canvas" aria-label="Planogram canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="exportDialog" class="dialog">
+    <form method="dialog" class="dialogBody">
+      <h3>Export JSON</h3>
+      <textarea id="exportText" spellcheck="false"></textarea>
+      <div class="dialogActions">
+        <button id="copyBtn" type="button">Copy</button>
+        <button>Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
 </body>
 </html>
